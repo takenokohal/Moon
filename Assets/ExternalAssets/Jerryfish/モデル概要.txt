@@ -1,0 +1,23 @@
+クラゲ　モデル概要
+
+
+モデリング：3ds Max 2020
+
+テクスチャ作成
+リギング	：blender ver.2.79
+
+ポリゴン数：△2976
+
+
+
+
+
+――unityへインポートした際
+
+
+Shader→Unlit→Texture
+
+「Sphere001」に jerryfish_色名.png
+
+
+を当ててもらうといい感じになるはずです。
