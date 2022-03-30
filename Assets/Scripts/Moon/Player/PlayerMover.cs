@@ -1,7 +1,6 @@
-using UniRx;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using VContainer;
+using VRM;
 
 namespace Moon.Player
 {
@@ -15,7 +14,8 @@ namespace Moon.Player
         private void Start()
         {
             _playerInput = FindObjectOfType<PlayerInput>();
-          //  Application.targetFrameRate = 30;
+
+            FastSpringBoneReplacer.ReplaceAsync(gameObject);
         }
 
         private void Update()
