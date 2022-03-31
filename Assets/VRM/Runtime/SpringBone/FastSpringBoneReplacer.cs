@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using VRM.FastSpringBones.Blittables;
 using VRM.FastSpringBones.Components;
-using VRMShaders;
 using Object = UnityEngine.Object;
 
 namespace VRM
@@ -16,7 +15,7 @@ namespace VRM
     /// </summary>
     public static class FastSpringBoneReplacer
     {
-        public static async Task ReplaceAsync(GameObject gameObject, IAwaitCaller awaitCaller = null, CancellationToken token = default)
+        public static void ReplaceAsync(GameObject gameObject, CancellationToken token = default)
         {
             var service = FastSpringBoneService.Instance;
             var springBones = gameObject.GetComponentsInChildren<VRMSpringBone>();
@@ -26,12 +25,6 @@ namespace VRM
             foreach (var springBone in springBones)
             {
                 springBone.enabled = false;
-            };
-
-            if (awaitCaller != null)
-            {
-                await awaitCaller.NextFrame();
-                token.ThrowIfCancellationRequested();
             }
 
             var vrmColliderGroups = gameObject.GetComponentsInChildren<VRMSpringBoneColliderGroup>();
@@ -40,11 +33,7 @@ namespace VRM
             // Colliderを差し替える
             foreach (var vrmColliderGroup in vrmColliderGroups)
             {
-                if (awaitCaller != null)
-                {
-                    await awaitCaller.NextFrame();
-                    token.ThrowIfCancellationRequested();
-                }
+                
 
                 var fastSpringBoneCollider = vrmColliderGroup.gameObject.AddComponent<FastSpringBoneColliderGroup>();
                 fastSpringBoneCollider.Initialize(
@@ -76,21 +65,17 @@ namespace VRM
                     --i;
                 }
             }
+            
 
-            if (awaitCaller != null)
-            {
-                await awaitCaller.NextFrame();
-                token.ThrowIfCancellationRequested();
-            }
             token.ThrowIfCancellationRequested();
 
             foreach (var (vrmSpringBone, rootBoneTransform) in springRootBones)
             {
                 // FastSpringRootBoneに差し替える
-                var fastSpringRootBone = 
+                var fastSpringRootBone =
                     new FastSpringRootBone(
                         service.TransformRegistry,
-                        rootBoneTransform, 
+                        rootBoneTransform,
                         service.RootBoneRegistry,
                         service.ColliderGroupRegistry);
                 disposer.Add(fastSpringRootBone);
@@ -111,12 +96,7 @@ namespace VRM
                 );
 
                 Object.Destroy(vrmSpringBone);
-                
-                if (awaitCaller != null)
-                {
-                    await awaitCaller.NextFrame();
-                    token.ThrowIfCancellationRequested();
-                }
+
                 token.ThrowIfCancellationRequested();
             }
 

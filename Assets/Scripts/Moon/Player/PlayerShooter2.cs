@@ -27,7 +27,8 @@ namespace Moon.Player
                     {
                         Position = transform.position,
                         Velocity = new Vector2(Mathf.Cos(rot), Mathf.Sin(rot)) * 2,
-                        ColorHue = 0.5f
+                        ColorHue = 0.5f,
+                        Lifetime = 1
                     });
                 }
 

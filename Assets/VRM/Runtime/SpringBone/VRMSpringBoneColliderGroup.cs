@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UniGLTF;
 using UnityEngine;
 
 
@@ -47,16 +46,16 @@ namespace VRM
             }
         }
 
-        public IEnumerable<Validation> Validate()
-        {
-            if (transform.localScale != Vector3.one)
-            {
-                yield return Validation.Warning($"'{name}' GameObject has none 1 scaling");
-            }
-            else if (transform.lossyScale != Vector3.one)
-            {
-                yield return Validation.Warning($"'{name}' parent GameObject has none 1 scaling");
-            }
-        }
+        // public IEnumerable<Validation> Validate()
+        // {
+        //     if (transform.localScale != Vector3.one)
+        //     {
+        //         yield return Validation.Warning($"'{name}' GameObject has none 1 scaling");
+        //     }
+        //     else if (transform.lossyScale != Vector3.one)
+        //     {
+        //         yield return Validation.Warning($"'{name}' parent GameObject has none 1 scaling");
+        //     }
+        // }
     }
 }

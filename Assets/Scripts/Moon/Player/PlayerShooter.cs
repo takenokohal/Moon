@@ -28,8 +28,9 @@ namespace Moon.Player
                     _bulletManager.AddBullet(new BulletManager.BulletData()
                     {
                         Position = transform.position,
-                        Velocity = new Vector2(Mathf.Cos(rot), Mathf.Sin(rot)) * 2,
-                        ColorHue = 0.1f
+                        Velocity = new Vector2(Mathf.Cos(rot), Mathf.Sin(rot)) * 5,
+                        ColorHue = 0.1f,
+                        Lifetime = 1
                     });
                 }
 
@@ -39,8 +40,9 @@ namespace Moon.Player
                     _bulletManager.AddBullet(new BulletManager.BulletData()
                     {
                         Position = transform.position,
-                        Velocity = new Vector2(Mathf.Cos(rot), Mathf.Sin(rot)) * 2,
-                        ColorHue = 0.1f
+                        Velocity = new Vector2(Mathf.Cos(rot), Mathf.Sin(rot)) * 5,
+                        ColorHue = 0.1f,
+                        Lifetime = 1
                     });
                 }
 
