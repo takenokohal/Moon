@@ -1,22 +1,22 @@
-﻿using Moon.Bullet;
+﻿using System;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Moon.Enemy
 {
-    public class EnemySpawner : MonoBehaviour
+    public class EnemySpawner
     {
-        [SerializeField] private EnemyController enemy;
+        private readonly EnemyController.Factory _factory;
 
-        private void Start()
+        public EnemySpawner(EnemyController.Factory factory)
         {
-            var bulletManager = FindObjectOfType<BulletManager>();
-            for (int i = 0; i < 100; i++)
-            {
-                var e = Instantiate(enemy);
-                e.Construct(bulletManager);
-                var t = e.transform;
-                t.position = Random.insideUnitCircle * 20;
-            }
+            _factory = factory;
+        }
+
+        public UniTask<List<EnemyController>> Spawn(int stage)
+        {
+            return Stage1Spawner.Spawn(_factory, stage);
         }
     }
 }

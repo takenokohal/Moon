@@ -11,8 +11,7 @@ GameObject:
   - component: {fileID: 8295465982245086617}
   - component: {fileID: 8295465982245086616}
   - component: {fileID: 8295465982245086623}
-  - component: {fileID: -5065915878683708152}
-  - component: {fileID: 138549657083253197}
+  - component: {fileID: -8586041854621457048}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -4816,7 +4815,7 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
---- !u!114 &-5065915878683708152
+--- !u!114 &-8586041854621457048
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4828,18 +4827,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84077589c62558f4abafa01c2bd57099, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &138549657083253197
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8295465982245086622}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e2243f1eb344d73b9372903cc62d903, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  exp: {fileID: 8742705163059487594, guid: 0723c840172edea4cb3d13182fbc5bd9, type: 3}
 --- !u!1 &8295465982608887244
 GameObject:
   m_ObjectHideFlags: 0
@@ -4901,7 +4889,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cf3499d2749e1ae44a4f841c64af0a80, type: 2}
+  - {fileID: 2100000, guid: 724181568a5731541a181af3543d9a02, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4984,7 +4972,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cf3499d2749e1ae44a4f841c64af0a80, type: 2}
+  - {fileID: 2100000, guid: 724181568a5731541a181af3543d9a02, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
