@@ -2,112 +2,261 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Moon.Item;
+using Moon.Shooter;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
-using UnityEngine.ParticleSystemJobs;
+using VContainer;
 
 namespace Moon.Bullet
 {
-    [DefaultExecutionOrder(100)]
-    public class BulletManager : MonoBehaviour
+    public class BulletManager : MonoBehaviour, IBulletManager
     {
-        private ParticleSystem _particleSystem;
+        public const int BulletPerSecond = 100;
 
-        private readonly List<BulletData> _originBulletList = new(100000);
-        public void AddBullet(BulletData bulletData) => _originBulletList.Add(bulletData);
+        //  private BulletView _bulletView;
+        private BulletParticleView _bulletParticleView;
 
-        private NativeArray<BulletData> _tempDataArray;
+        public NativeArray<BulletData> BulletDataArray { get; private set; }
+        private readonly List<BulletData> _tmpBulletDataList = new(1000000);
 
-        private JobHandle _jobHandle;
+        private NativeArray<DamagedData> _damagedDataArray;
+
+        private JobHandle _bulletJobHandle;
+        private JobHandle _viewJobHandle;
+
+        [SerializeField] private Material material;
+
+        private readonly List<ShooterHolder> _shooters = new();
+        private readonly List<IDamageable> _damageableList = new();
+
+        private bool _isStop = true;
+
+        [Inject] private ItemDatabase _itemDatabase;
+
+        public void RegisterShooterHolder(ShooterHolder shooter) => _shooters.Add(shooter);
+
+        public void RegisterDamageable(IDamageable damageable) => _damageableList.Add(damageable);
+
+        public void UnRegisterShooterHolder(ShooterHolder shooter)
+        {
+            _shooters.Remove(shooter);
+        }
+
+        public void UnRegisterDamageable(IDamageable damageable)
+        {
+            _damageableList.Remove(damageable);
+        }
+
+        private Transform _cameraPosition;
 
         private void Start()
         {
-            _particleSystem = GetComponent<ParticleSystem>();
+            //   _bulletView = new BulletView(material);
+            _bulletParticleView = new BulletParticleView(GetComponent<ParticleSystem>());
+
+            _cameraPosition = Camera.main.transform;
+        }
+
+        private void OnDisable()
+        {
+            _viewJobHandle.Complete();
+            _bulletParticleView.Dispose();
+            BulletDataArray.Dispose(_bulletJobHandle);
+            _damagedDataArray.Dispose(_bulletJobHandle);
+        }
+
+        public void StopShooting()
+        {
+            _isStop = true;
+            _tmpBulletDataList.Clear();
+            CreateTmpArray();
+        }
+
+        public void StartShooting()
+        {
+            _isStop = false;
         }
 
         private void Update()
         {
-            var emit = _originBulletList.Count - _particleSystem.particleCount;
-            var deltaTime = Time.smoothDeltaTime;
-            if (emit > 0)
-                _particleSystem.Emit(new ParticleSystem.EmitParams()
-                {
-                    startSize = 0.1f
-                }, emit);
-
-            _tempDataArray = new NativeArray<BulletData>(_originBulletList.Count, Allocator.TempJob);
-            for (int i = 0; i < _tempDataArray.Length; i++)
+            JobHandle.CompleteAll(ref _bulletJobHandle, ref _viewJobHandle);
+            if (BulletDataArray.IsCreated)
             {
-                _tempDataArray[i] = _originBulletList[i];
+                CreateList();
             }
 
-            _jobHandle = new ParticleJob
+            if (_damagedDataArray.IsCreated)
+                for (int i = 0; i < _damagedDataArray.Length; i++)
+                {
+                    var damage = _damagedDataArray[i].Damage;
+                    if (damage > 0)
+                    {
+                        _damageableList[i].OnDamaged(damage);
+                    }
+                }
+
+            //////////
+
+
+            if (!_isStop)
+                foreach (var shooter in _shooters)
+                {
+                    shooter.ShooterUpdate(this);
+                }
+
+            CreateTmpArray();
+
+            _bulletJobHandle = new BulletJob
             {
-                BulletDataArray = _tempDataArray,
-                DeltaTime = deltaTime
-            }.Schedule(_particleSystem, 32);
+                BulletDataArray = BulletDataArray,
+                DeltaTime = Time.deltaTime,
+                DamagedDataArray = _damagedDataArray,
+                CameraPosition = _cameraPosition.position
+            }.Schedule(BulletDataArray.Length, 16);
+
+            _viewJobHandle = _bulletParticleView.UpdateView(BulletDataArray, _bulletJobHandle);
+
             JobHandle.ScheduleBatchedJobs();
         }
 
-        private void LateUpdate()
+
+        private void CreateTmpArray()
         {
-            _jobHandle.Complete();
-            _originBulletList.Clear();
-            for (int i = 0; i < _tempDataArray.Length; i++)
+            if (BulletDataArray.IsCreated)
+                BulletDataArray.Dispose();
+
+
+            BulletDataArray = new NativeArray<BulletData>(_tmpBulletDataList.Count, Allocator.TempJob);
+            for (var i = 0; i < _tmpBulletDataList.Count; i++)
             {
-                if (!_tempDataArray[i].IsKilled)
-                    _originBulletList.Add(_tempDataArray[i]);
+                var bulletDataArray = BulletDataArray;
+                bulletDataArray[i] = _tmpBulletDataList[i];
             }
+            //////
 
-            _tempDataArray.Dispose(_jobHandle);
+            if (_damagedDataArray.IsCreated)
+                _damagedDataArray.Dispose();
+
+            _damagedDataArray = new NativeArray<DamagedData>(_damageableList.Count, Allocator.TempJob);
+
+            for (int i = 0; i < _damagedDataArray.Length; i++)
+            {
+                _damagedDataArray[i] = new DamagedData()
+                {
+                    Position = _damageableList[i].GetPosition(),
+                    IsEnemy = _damageableList[i].IsEnemy
+                };
+            }
         }
 
-
-        public struct BulletData
+        private void CreateList()
         {
-            public Vector2 Position;
-            public Vector2 Velocity;
-            public float ColorHue;
+            _tmpBulletDataList.Clear();
 
-            public bool IsKilled;
+            if (BulletDataArray.Any())
+                _tmpBulletDataList.AddRange(BulletDataArray.Where(value => value.IsActive));
         }
+
+        public void AddBullet(Vector2 position, Vector2 velocity, ShooterType shooterType, bool isEnemy)
+        {
+            var v = new BulletData(position, velocity,
+                _itemDatabase.ItemDataArray.First(value => value.ShooterType == shooterType).Color, isEnemy);
+            _tmpBulletDataList.Add(v);
+        }
+
 
         [BurstCompile]
-        private struct ParticleJob : IJobParticleSystemParallelFor
+        private struct BulletJob : IJobParallelFor
         {
-            public NativeArray<BulletData> BulletDataArray;
+            [NativeDisableParallelForRestriction] public NativeArray<BulletData> BulletDataArray;
+            [NativeDisableParallelForRestriction] public NativeArray<DamagedData> DamagedDataArray;
             [ReadOnly] public float DeltaTime;
+            [ReadOnly] public Vector2 CameraPosition;
 
-            public void Execute(ParticleSystemJobData jobData, int index)
+            private const float MaxTime = 30;
+            private const float MaxRange = 256;
+
+            public void Execute(int index)
             {
                 var data = BulletDataArray[index];
-                var nextPosition = data.Position + data.Velocity * DeltaTime;
+                if (!data.IsActive)
+                    return;
 
-                if (nextPosition.sqrMagnitude < 100)
+                data.Position += data.Velocity * DeltaTime;
+                data.ElapsedTime += DeltaTime;
+
+                if (data.ElapsedTime > MaxTime)
                 {
-                    data.Position = nextPosition;
-                    BulletDataArray[index] = data;
-
-                    var positions = jobData.positions;
-                    positions[index] = nextPosition;
-
-                    var colors = jobData.startColors;
-                    colors[index] = Color.HSVToRGB(data.ColorHue, 1, 1);
+                    Destroy(index);
+                    return;
                 }
-                //Kill
-                else
+
+
+                var dp = CameraPosition - data.Position;
+                if (dp.sqrMagnitude > MaxRange)
                 {
-                    BulletDataArray[index] = new BulletData
+                    if (Vector2.Dot(dp, data.Velocity) < 0)
                     {
-                        IsKilled = true
-                    };
-
-                    var life = jobData.aliveTimePercent;
-                    life[index] = 100f;
+                        Destroy(index);
+                        return;
+                    }
                 }
+
+
+                for (int i = 0; i < DamagedDataArray.Length; i++)
+                {
+                    var damageData = DamagedDataArray[i];
+                    if (data.IsEnemy == damageData.IsEnemy)
+                        continue;
+                    if ((data.Position - damageData.Position).sqrMagnitude > 0.25f)
+                        continue;
+
+                    damageData.Damage++;
+                    DamagedDataArray[i] = damageData;
+                    Destroy(index);
+                    return;
+                }
+
+
+                for (int i = 0; i < BulletDataArray.Length; i++)
+                {
+                    if (i == index)
+                        continue;
+                    var v = BulletDataArray[i];
+                    if (data.IsEnemy == v.IsEnemy)
+                        continue;
+
+                    if (!v.IsActive)
+                        continue;
+
+                    if ((v.Position - data.Position).sqrMagnitude > 0.01f)
+                        continue;
+
+                    v.IsActive = false;
+                    Destroy(index);
+                    return;
+                }
+
+
+                BulletDataArray[index] = data;
             }
+
+            private void Destroy(int index)
+            {
+                var v = BulletDataArray[index];
+                v.IsActive = false;
+                BulletDataArray[index] = v;
+            }
+        }
+
+        private struct DamagedData
+        {
+            public Vector2 Position;
+            public int Damage;
+            public bool IsEnemy;
         }
     }
 }

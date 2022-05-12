@@ -1,15 +1,19 @@
+using Moon.Player;
+using UniRx;
 using UnityEngine;
 
 namespace Moon.Cam
 {
     public class CameraController : MonoBehaviour
     {
-        private Transform _player;
+        private PlayerCore _player;
 
         // Start is called before the first frame update
         void Start()
         {
-            _player = GameObject.Find("Player").transform;
+            _player = FindObjectOfType<PlayerCore>();
+
+            _player.OnDeadObservable.Subscribe(_ => Destroy(this));
         }
 
         // Update is called once per frame
